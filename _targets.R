@@ -8,15 +8,14 @@ library(targets)
 library(tarchetypes) 
 library(crew)
 library(crew.cluster)
-# library(autometric) #Optional, for logging CPU and RAM usage.  Useful for making appropriate sized workers
 
 # Detect whether you're on HPC & not with an Open On Demand session (which cannot submit SLURM jobs) and set appropriate controller
 slurm_host <- Sys.getenv("SLURM_SUBMIT_HOST", unset = NA)
 hpc <- !is.na(slurm_host)
 
 # Set up potential controllers
-controller_hpc_small <- crew.cluster::crew_controller_slurm(
-  name = "hpc_small",
+controller_hpc <- crew.cluster::crew_controller_slurm(
+  name = "hpc",
   workers = 10,
   seconds_idle = 120,  # time until workers are shut down after idle
   options_cluster = crew.cluster::crew_options_slurm(
@@ -33,25 +32,6 @@ controller_hpc_small <- crew.cluster::crew_controller_slurm(
   )
 )
 
-controller_hpc_large <- crew.cluster::crew_controller_slurm(
-  name = "hpc_large",
-  workers = 10,
-  seconds_idle = 300,  # time until workers are shut down after idle
-  ## Uncomment to add logging via the autometric package
-  options_cluster = crew.cluster::crew_options_slurm(
-    script_lines = c(
-      "module load R/4.4.1-foss-2022b"
-      #add additional lines to the SLURM job script as necessary here
-    ),
-    log_output = "logs/crew_large_log_%A.out",
-    log_error = "logs/crew_large_log_%A.err",
-    memory_gigabytes_per_cpu = 10,
-    cpus_per_task = 36,
-    time_minutes = 2880, # wall time for each worker
-    partition = "batch"
-  )
-)
-
 controller_local <- crew_controller_local(
   name = "local",
   workers = 10,
@@ -61,10 +41,10 @@ controller_local <- crew_controller_local(
 # Set target options:
 tar_option_set(
   packages = c("tibble"), # Packages that your targets need for their tasks.
-  controller = crew::crew_controller_group(controller_hpc_small, controller_hpc_large, controller_local),
+  controller = crew::crew_controller_group(controller_hpc, controller_local),
   resources = tar_resources(
-    #if on HPC use "hpc_small" controller by default, otherwise use "local"
-    crew = tar_resources_crew(controller = ifelse(hpc, "hpc_small", "local"))
+    #if on HPC use "hpc" controller by default, otherwise use "local"
+    crew = tar_resources_crew(controller = ifelse(hpc, "hpc", "local"))
   ),
   # It should be safe to assume that all workers have read/write access to the
   # _targets/ directory.  These setting should speed things up.
@@ -80,7 +60,7 @@ tar_source()
 tar_plan(
   tar_target(
     data_raw,
-    tibble(x = rnorm(1000), y = rnorm(1000), z = rnorm(1000))
+    tibble(x = rnorm(100), y = rnorm(100), z = rnorm(100))
   ),
   #this just simulates a long-running step
   tar_target(
@@ -98,11 +78,7 @@ tar_plan(
   ),
   tar_target(
     model3,
-    lm(y ~ x*z, data = data),
-    #for this target only, use a worker with more cores and RAM
-    resources = tar_resources(
-      crew = tar_resources_crew(controller = ifelse(hpc, "hpc_large", "local"))
-    )
+    lm(y ~ x*z, data = data)
   ),
   tar_target(
     model_compare,
