@@ -80,7 +80,7 @@ tar_source()
 tar_plan(
   tar_target(
     data_raw,
-    tibble(x = rnorm(100000), y = rnorm(100000), z = rnorm(100000))
+    tibble(x = rnorm(1000), y = rnorm(1000), z = rnorm(1000))
   ),
   #this just simulates a long-running step
   tar_target(
