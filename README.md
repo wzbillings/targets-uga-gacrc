@@ -1,4 +1,4 @@
-# targets-uahpc: A template to use the {targets} R package with UA-HPC
+# targets-uga: A template to use the {targets} R package with UGA sapelo2
 
 <!-- badges: start -->
 

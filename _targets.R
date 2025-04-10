@@ -10,72 +10,52 @@ library(crew)
 library(crew.cluster)
 # library(autometric) #Optional, for logging CPU and RAM usage.  Useful for making appropriate sized workers
 
-# You'll need to replace this with your HPC group name.  You can discover the name by running `va` when logged into the HPC.
-hpc_group <- "kristinariemer" 
-
 # Detect whether you're on HPC & not with an Open On Demand session (which cannot submit SLURM jobs) and set appropriate controller
-slurm_host <- Sys.getenv("SLURM_SUBMIT_HOST")
-hpc <- grepl("hpc\\.arizona\\.edu", slurm_host) & !grepl("ood", slurm_host)
-
+slurm_host <- Sys.getenv("SLURM_SUBMIT_HOST", unset = NA)
+hpc <- !is.na(slurm_host)
 
 # Set up potential controllers
 controller_hpc_small <- crew.cluster::crew_controller_slurm(
   name = "hpc_small",
-  workers = 2,
-  seconds_idle = 300,  # time until workers are shut down after idle
-  ## Uncomment to add logging via the autometric package
-  # options_metrics = crew_options_metrics(
-  #   path = "/dev/stdout",
-  #   seconds_interval = 1
-  # ),
+  workers = 10,
+  seconds_idle = 120,  # time until workers are shut down after idle
   options_cluster = crew.cluster::crew_options_slurm(
     script_lines = c(
-      paste0("#SBATCH --account ", hpc_group),
-      "module load R/4.4"
+      "module load R/4.4.1-foss-2022b"
       #add additional lines to the SLURM job script as necessary here
     ),
     log_output = "logs/crew_small_log_%A.out",
     log_error = "logs/crew_small_log_%A.err",
-    memory_gigabytes_per_cpu = 5,
-    cpus_per_task = 2, #total 10gb RAM
+    memory_gigabytes_per_cpu = 10,
+    cpus_per_task = 2, #total 20gb RAM
     time_minutes = 1200, # wall time for each worker
-    partition = "standard"
+    partition = "batch"
   )
 )
 
 controller_hpc_large <- crew.cluster::crew_controller_slurm(
   name = "hpc_large",
-  workers = 2,
+  workers = 10,
   seconds_idle = 300,  # time until workers are shut down after idle
   ## Uncomment to add logging via the autometric package
-  # options_metrics = crew_options_metrics(
-  #   path = "/dev/stdout",
-  #   seconds_interval = 1
-  # ),
   options_cluster = crew.cluster::crew_options_slurm(
     script_lines = c(
-      paste0("#SBATCH --account ", hpc_group),
-      "module load R/4.4"
+      "module load R/4.4.1-foss-2022b"
       #add additional lines to the SLURM job script as necessary here
     ),
     log_output = "logs/crew_large_log_%A.out",
     log_error = "logs/crew_large_log_%A.err",
-    memory_gigabytes_per_cpu = 5,
-    cpus_per_task = 4, #total 10gb RAM
-    time_minutes = 1200, # wall time for each worker
-    partition = "standard"
+    memory_gigabytes_per_cpu = 10,
+    cpus_per_task = 36,
+    time_minutes = 2880, # wall time for each worker
+    partition = "batch"
   )
 )
 
 controller_local <- crew_controller_local(
   name = "local",
-  workers = 2,
-  options_local = crew::crew_options_local(log_directory = "logs"),
-  ## Uncomment to add logging via the autometric package
-  # options_metrics = crew::crew_options_metrics(
-  #   path = "/dev/stdout",
-  #   seconds_interval = 1
-  # )
+  workers = 10,
+  options_local = crew::crew_options_local(log_directory = "logs")
 )
 
 # Set target options:
@@ -100,7 +80,7 @@ tar_source()
 tar_plan(
   tar_target(
     data_raw,
-    tibble(x = rnorm(100), y = rnorm(100), z = rnorm(100))
+    tibble(x = rnorm(100000), y = rnorm(100000), z = rnorm(100000))
   ),
   #this just simulates a long-running step
   tar_target(
