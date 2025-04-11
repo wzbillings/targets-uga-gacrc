@@ -4,6 +4,7 @@ controller_hpc <- crew.cluster::crew_controller_slurm(
   seconds_idle = 120,  # time until workers are shut down after idle
   options_cluster = crew.cluster::crew_options_slurm(
     script_lines = c(
+      "#SBATCH --ntasks=1",
       "module load R/4.4.1-foss-2022b"
       #add additional lines to the SLURM job script as necessary here
     ),
