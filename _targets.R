@@ -12,6 +12,13 @@ library(crew.cluster)
 # Detect whether you're on HPC & not with an Open On Demand session (which cannot submit SLURM jobs) and set appropriate controller
 slurm_host <- Sys.getenv("SLURM_SUBMIT_HOST", unset = NA)
 hpc <- !is.na(slurm_host)
+if (isTRUE(hpc)) {
+  message("Running targets with Slurm controller.")
+} else if (isFALSE(hpc)) {
+  message("Running targets with local controller.")
+} else {
+  stop("There's something wrong with the `hpc` variable.")
+}
 
 # Set up potential controllers
 controller_hpc <- crew.cluster::crew_controller_slurm(
@@ -20,6 +27,7 @@ controller_hpc <- crew.cluster::crew_controller_slurm(
   seconds_idle = 120,  # time until workers are shut down after idle
   options_cluster = crew.cluster::crew_options_slurm(
     script_lines = c(
+      "#SBATCH --ntasks=1",
       "module load R/4.4.1-foss-2022b"
       #add additional lines to the SLURM job script as necessary here
     ),
