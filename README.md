@@ -51,3 +51,8 @@ The `_targets/` store can grow to be quite large depending on the size of data a
 You should always run your code from the `/scratch/$USER` directory, NOT from `/home/$USER`.
 
 Code in `_targets.R` will attempt to detect if you are able to launch SLURM jobs and if not (e.g. you are not on the HPC or are using Open On Demand) it will fall back to using `crew::crew_controller_local()`.
+
+## Acknowledgements
+
+This is mostly copied from Eric Scott's [UAHPC template](https://github.com/cct-datascience/targets-uahpc), he was super helpful getting things working on the targets help forum.
+
